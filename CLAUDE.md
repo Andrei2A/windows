@@ -10,13 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## How to Run
 
-Open `1.html` directly in a browser. No build step, no dependencies, no server required. The entire game is self-contained in one file (~6500+ lines, ~255K+ chars).
+Open `1.html` directly in a browser. No build step, no dependencies, no server required. The entire game is self-contained in one file (~7900+ lines, ~448K+ chars).
 
 ## Syntax Validation
 
 After any JS edit, validate with:
 ```bash
-node -e 'var fs=require("fs"); var html=fs.readFileSync("1.html","utf8"); var m=html.match(/<script[^>]*>([\\s\\S]*?)<\\/script>/); if(m===null){console.log("no script");process.exit(1);} try{new Function(m[1]);console.log("JS OK")}catch(e){console.log("ERROR:",e.message)}'
+node -e 'var fs=require("fs"); var html=fs.readFileSync("1.html","utf8"); var m=html.match(/<script[^>]*>([\s\S]*?)<\/script>/); if(m===null){console.log("no script");process.exit(1);} try{new Function(m[1]);console.log("JS OK")}catch(e){console.log("ERROR:",e.message)}'
 ```
 
 ## Architecture
@@ -27,22 +27,26 @@ node -e 'var fs=require("fs"); var html=fs.readFileSync("1.html","utf8"); var m=
 - `depseek.md` — DeepSeek API reference docs
 
 ### Code Layout Inside `1.html`
-1. **HTML structure** (lines 1-1537): Monitor frame, CRT overlay, desktop, taskbar, start menu, app windows
-2. **`<script>` block** (line 1538 onwards):
-   - `DeepSeekAI` module — AI integration via OpenAI-compatible API (`https://api.deepseek.com/v1`, model `deepseek-chat`)
-   - `SFX` module — Procedural sound effects using Web Audio API (no audio files)
-   - `game` object — Single giant object literal containing ALL game state and methods
+1. **HTML + CSS** (lines 1–1617): Monitor frame, CRT overlay, desktop, taskbar, start menu, app windows, all styles
+2. **`<script>` block** (line 1618 onwards), in order:
+   - `DeepSeekAI` module (line 1620) — AI integration via OpenAI-compatible API
+   - `SFX` module (line 1730) — Procedural sound effects using Web Audio API (no audio files)
+   - Icon definitions array (line 1869) and level configs (line 1897)
+   - `game` object (line 1990) — Single giant object literal containing ALL game state and methods
+   - Mouse event handlers (line 7858)
+   - `game.init()` call (line 7930+)
 
 ### The `game` Object
-Everything lives on the `game` object — state properties, game loop, entity management, UI, apps, CockTube (YouTube clone), chat system, mini-games, shop, weather, day/night cycle, etc. Key sections:
+Everything lives on the `game` object — state properties, game loop, entity management, UI, apps, CockTube, chat, mini-games, shop, weather, day/night cycle, etc. Major sections by line:
 
-- **Game loop:** `init()` → `setupStartup()` → `startLevel()` → `updatePlaying(dt)` via `requestAnimationFrame`
+- **Game loop:** `init()` → `setupStartup()` → `startLevel()` → `updatePlaying(dt)` via `requestAnimationFrame` (line ~7459)
 - **Phases:** `startup`, `playing`, `error`, `recovery_truck`, `recovery_settings`, `shutdown`
 - **Entity spawners:** `createCockroach()`, `spawnVirus()`, `spawnSpider()`, `spawnPopupAd()`, `spawnClippy()`, `spawnBoss()`
-- **Apps system:** `openApp(icon)` → `getAppContent(icon)` returns HTML, `initApp(icon)` sets up interactivity, `closeApp()` cleans up
+- **Apps system** (line ~3239): `openApp(icon)` → `getAppContent(icon)` returns HTML, `initApp(icon)` sets up interactivity, `closeApp()` cleans up
 - **CockTube (YouTube clone):** Methods prefixed with `yt` or `_yt`. Has videos, shorts, games, comment bots, auto-conversations, studio for creating videos
-- **Chat system:** `chatSend()`, `getChatConversation()` — 3 contacts (Clippy, King, Antivirus)
-- **Mini-games:** 6 canvas-based games inside CockTube (`_ytGameRunner`, `_ytGameClicker`, `_ytGameQuest`, `_ytGamePuzzle`, `_ytGameSnake`, `_ytGameShooter`)
+- **Chat system** (line ~3520): `chatSend()`, `getChatConversation()` — 3 contacts (Clippy, King, Antivirus)
+- **Mini-games** (line ~4881): 6 canvas-based games inside CockTube (`_ytGameRunner`, `_ytGameClicker`, `_ytGameQuest`, `_ytGamePuzzle`, `_ytGameSnake`, `_ytGameShooter`)
+- **Feature systems** (lines 6258–7400): Clippy, viruses, spiders, BSOD boss, pop-up ads, Windows update, defrag, antivirus, crazy mouse, traps, glue, fire extinguisher, second monitor, magnet, screensaver, weather, day/night, pixel fire, minesweeper, solitaire, ping pong, achievements, hammer upgrades, boss icons, rest mode, shadow figure, evil eye, whisper, mirror cursor, glitch zone, flashlight, ransomware, radio
 
 ### DeepSeek AI Integration
 The `DeepSeekAI` module provides AI-powered features with synchronous fallbacks:
@@ -65,3 +69,4 @@ Pattern: Always `try AI → fallback to hardcoded`. AI responses update DOM asyn
 - **Template literal gotcha:** When building innerHTML with onclick handlers containing quotes, use string concatenation instead of template literals to avoid syntax errors with nested quotes
 - **Sound:** All procedural via `SFX.play(type)` — oscillator-based, no audio files
 - **Cleanup:** `closeApp()` must stop all intervals/timers/animation frames for the current app (particles, auto-chat, snake keyboard listeners, game loops)
+- **Section navigation:** All code sections are marked with `// === SECTION NAME ===` comment banners — use these to navigate the file
